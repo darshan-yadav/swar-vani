@@ -1557,6 +1557,182 @@ The following properties represent the unique, non-redundant set of testable beh
 *For any* set of available bundle options, the Procurement Agent should recommend the option with the lowest total cost.
 **Validates: Requirements 18.3**
 
+**Property 65: Supplier Composite Score Ranking**
+*For any* set of suppliers offering the same product, the system should rank them by composite score combining total cost, delivery time, and supplier reputation score.
+**Validates: Requirements 4.3**
+
+**Property 66: Supplier Information Completeness in TTS**
+*For any* supplier option presented via TTS, the output should include delivery reliability percentage, return policy terms, and available credit terms.
+**Validates: Requirements 4.4**
+
+**Property 67: Supplier Reputation Score Calculation**
+*For any* supplier, the reputation score should be calculated based on historical delivery performance, return acceptance rate, and credit terms flexibility.
+**Validates: Requirements 4.7**
+
+**Property 68: PIN Confirmation Threshold Enforcement**
+*For any* purchase order, if the PO value exceeds the configured threshold, the Trust Agent should require PIN confirmation via voice.
+**Validates: Requirements 6.2**
+
+**Property 69: PIN Prompt and Verification**
+*For any* transaction requiring PIN confirmation, the system should prompt for the 4-digit PIN and verify the spoken digits before executing the transaction.
+**Validates: Requirements 6.3**
+
+**Property 70: PIN Retry and Lockout**
+*For any* failed PIN verification, the system should allow 2 additional attempts (3 total) before locking the transaction for 15 minutes.
+**Validates: Requirements 6.4**
+
+**Property 71: Streaming TTS Before LLM Completion**
+*For any* LLM response generation, the TTS service should begin streaming audio output as soon as partial LLM response is available, not waiting for complete response.
+**Validates: Requirements 10.6**
+
+**Property 72: Product Knowledge Graph Query Priority**
+*For any* product mention in voice input, the system should first query the Product Knowledge Graph before invoking the LLM for product identification.
+**Validates: Requirements 21.2**
+
+**Property 73: Product Knowledge Graph Fallback and Learning**
+*For any* product query where the Product Knowledge Graph has no match, the system should fall back to LLM-based mapping and add successful mappings to the graph for future use.
+**Validates: Requirements 21.4**
+
+**Property 74: Offline Product Knowledge Graph Usage**
+*For any* product identification query when network connectivity is unavailable, the system should use the locally cached Product Knowledge Graph without requiring network access.
+**Validates: Requirements 11.6, 21.6**
+
+**Property 75: Product Knowledge Graph Periodic Updates**
+*For any* successful LLM-based product mapping, the system should add it to the Product Knowledge Graph for future queries.
+**Validates: Requirements 21.7**
+
+**Property 76: Correction Trigger Phrase Recognition**
+*For any* voice input containing "That's wrong" or "Correct that", the system should activate correction mode.
+**Validates: Requirements 22.1**
+
+**Property 77: Correction Mode Clarification Request**
+*For any* activated correction mode, the system should ask the store owner to clarify the intended meaning via TTS.
+**Validates: Requirements 22.2**
+
+**Property 78: Correction Persistence**
+*For any* correction provided by a store owner, the system should update the Product Knowledge Graph or intent mapping and persist the change.
+**Validates: Requirements 22.3**
+
+**Property 79: Correction Confirmation**
+*For any* saved correction, the system should confirm the update via TTS.
+**Validates: Requirements 22.4**
+
+**Property 80: Correction Frequency Tracking**
+*For any* store owner, the system should track the frequency of corrections and use this data to prioritize learning.
+**Validates: Requirements 22.5**
+
+**Property 81: Global Graph Promotion on Multiple Corrections**
+*For any* product mapping corrected 3 or more times by different store owners, the system should promote the mapping to the global Product Knowledge Graph.
+**Validates: Requirements 22.6**
+
+**Property 82: Correction History Retrieval**
+*For any* voice command "Review my corrections", the system should retrieve and present recent correction history.
+**Validates: Requirements 22.7**
+
+**Property 83: WhatsApp Voice Message Processing**
+*For any* WhatsApp voice message received, the system should process it using the ASR service and respond with voice or text.
+**Validates: Requirements 23.2**
+
+**Property 84: IVR Menu and Free-Form Command Support**
+*For any* IVR call, the system should support both voice menu navigation and free-form voice commands.
+**Validates: Requirements 23.4**
+
+**Property 85: WhatsApp Multi-Operation Support**
+*For any* WhatsApp interaction, the system should support order confirmations, inventory updates, and price queries via both text and voice.
+**Validates: Requirements 23.5**
+
+**Property 86: IVR DTMF PIN Fallback**
+*For any* PIN confirmation via IVR, the system should support DTMF input as a fallback when voice recognition fails.
+**Validates: Requirements 23.6**
+
+**Property 87: Multi-Channel Context Preservation**
+*For any* conversation across WhatsApp messages or IVR call sessions, the system should maintain conversation context across turns.
+**Validates: Requirements 23.7**
+
+**Property 88: Guided Onboarding Initiation**
+*For any* newly registered store owner, the system should initiate guided onboarding with system-led questions via TTS.
+**Validates: Requirements 24.1**
+
+**Property 89: Onboarding Follow-Up Questions**
+*For any* product provided during onboarding, the system should ask follow-up questions about quantity and reorder amounts.
+**Validates: Requirements 24.3**
+
+**Property 90: Onboarding Progress Indicators**
+*For any* onboarding session in progress, the system should provide progress indicators via TTS (e.g., "Step 2 of 5 complete").
+**Validates: Requirements 24.4**
+
+**Property 91: Onboarding Completion Tutorial**
+*For any* completed onboarding session, the system should provide a voice tutorial of key commands and features.
+**Validates: Requirements 24.6**
+
+**Property 92: Onboarding Pause and Resume**
+*For any* onboarding session, the store owner should be able to pause and resume later from the same step, with state preserved.
+**Validates: Requirements 24.7**equirements 14.2**
+
+**Property 49: Completion Audio Summary**
+*For any* completed agent execution, the Orchestrator should generate an audio summary via TTS.
+**Validates: Requirements 14.3**
+
+**Property 50: Agent Failure Fallback**
+*For any* failed agent execution, the Orchestrator should implement a fallback strategy and notify the store owner of the failure.
+**Validates: Requirements 14.4**
+
+**Property 51: Conversation Context Preservation**
+*For any* multi-turn conversation, the Orchestrator should maintain context such that references to previous items (e.g., "that product", "the same supplier") are correctly resolved.
+**Validates: Requirements 14.5, 19.1, 19.2**
+
+**Property 52: Conversation Resumption After Interruption**
+*For any* interrupted conversation, the system should resume from the last confirmed state when the store owner returns.
+**Validates: Requirements 19.3**
+
+**Property 53: Context Timeout**
+*For any* conversation context, the system should retain it for at least 5 minutes of inactivity before clearing.
+**Validates: Requirements 19.4**
+
+**Property 54: Confirmation Level Selection**
+*For any* transaction, the system should use explicit confirmation (full details) for high-value operations and implicit confirmation (brief acknowledgment) for routine updates.
+**Validates: Requirements 15.1, 15.2**
+
+**Property 55: Explicit Confirmation Completeness**
+*For any* explicit confirmation request, the TTS message should include transaction amount, items, and supplier details.
+**Validates: Requirements 15.3**
+
+**Property 56: Distinct Aural Cues**
+*For any* system state change (listening, success, error), the system should provide a distinct audio cue.
+**Validates: Requirements 15.4**
+
+**Property 57: Confirmation Rejection Handling**
+*For any* rejected confirmation, the system should cancel the operation and request clarification via TTS.
+**Validates: Requirements 15.5**
+
+**Property 58: TTS Speed Adjustment**
+*For any* voice request to adjust response speed, the system should apply the change immediately to subsequent TTS output.
+**Validates: Requirements 16.2**
+
+**Property 59: Specific Error Prompts**
+*For any* error condition, the system should provide a specific fallback prompt related to the error context, not a generic "I don't understand" message.
+**Validates: Requirements 16.3**
+
+**Property 60: Preference Persistence**
+*For any* store owner preference (TTS speed, pitch, confirmation level), the system should persist it across sessions.
+**Validates: Requirements 16.4**
+
+**Property 61: Wake-Word Activation**
+*For any* detected wake-word, the system should activate listening mode and provide audio feedback.
+**Validates: Requirements 17.2**
+
+**Property 62: Bundle Discount Identification**
+*For any* draft cart with multiple items, the Procurement Agent should identify available bundle discount opportunities across all B2B platforms.
+**Validates: Requirements 18.1**
+
+**Property 63: Automatic Bundle Discount Application**
+*For any* identified bundle discount, the system should automatically apply it to the draft cart and communicate the savings via TTS.
+**Validates: Requirements 18.2**
+
+**Property 64: Optimal Bundle Selection**
+*For any* set of available bundle options, the Procurement Agent should recommend the option with the lowest total cost.
+**Validates: Requirements 18.3**
+
 ### Example-Based Properties
 
 These properties validate specific examples or edge cases rather than universal behaviors:
@@ -1581,6 +1757,26 @@ The system should accept wake-word configuration in multiple languages including
 The system should support manual activation via button press when wake-word detection is unavailable.
 **Validates: Requirements 17.3**
 
+**Example 6: Product Knowledge Graph Schema**
+The Product Knowledge Graph should maintain mappings with fields: vernacular_name, brand, SKU_id, and ONDC_category.
+**Validates: Requirements 21.1**
+
+**Example 7: Product Knowledge Graph Capacity**
+The Product Knowledge Graph should support at least 5,000 common vernacular product names across 22 Indian languages.
+**Validates: Requirements 21.5**
+
+**Example 8: WhatsApp Business API Integration**
+The system should support WhatsApp Business API integration for sending and receiving text and voice messages.
+**Validates: Requirements 23.1**
+
+**Example 9: IVR Phone Interface**
+The system should support IVR-based phone interface for voice interactions.
+**Validates: Requirements 23.3**
+
+**Example 10: Guided Onboarding Question Format**
+When collecting inventory information, the system should ask "What products do you sell? Let's start with your top 5" rather than expecting free-form input.
+**Validates: Requirements 24.2**
+
 ### Non-Testable Requirements
 
 The following requirements are not amenable to automated property-based testing:
@@ -1590,7 +1786,7 @@ The following requirements are not amenable to automated property-based testing:
 - **5.5**: <3% stock-out rate (business outcome metric)
 - **9.4**: ONDC Gateway integration (integration requirement, not behavior)
 - **10.3**: 75 dB noise handling (environmental performance requirement)
-- **10.4**: 1.5-second end-to-end latency (performance requirement)
+- **10.4**: 1-second end-to-end latency for first audio byte (performance requirement)
 - **13.4**: 20% forecast accuracy improvement (long-term metric)
 - **17.4**: <1 false wake-word per hour (long-term performance metric)
 - **18.4**: 5-9% cost reduction (business outcome metric)
@@ -1598,6 +1794,10 @@ The following requirements are not amenable to automated property-based testing:
 - **20.2**: 10,000 concurrent users (scalability requirement)
 - **20.3**: Graceful degradation under load (load testing requirement)
 - **20.4**: 99.5% uptime (availability SLA)
+- **21.3**: 100ms Product Knowledge Graph query latency (performance requirement)
+- **23.8**: 1,000 concurrent IVR calls and 10,000 concurrent WhatsApp conversations (scalability requirement)
+- **24.5**: Providing examples when store owner seems confused (subjective detection)
+- **24.8**: 15-minute onboarding completion time (timing constraint requiring integration testing)
 
 These requirements should be validated through integration testing, load testing, and production monitoring rather than unit or property-based tests.
 
@@ -1622,7 +1822,9 @@ These requirements should be validated through integration testing, load testing
 - **Budget Exceeded**: Block transaction, explain: "This order exceeds your [daily/weekly/monthly] budget of ₹[amount]. Current spending: ₹[spent]."
 - **Insufficient Stock**: Prevent order, suggest alternatives: "Only [quantity] units available. Would you like to order that amount?"
 - **Invalid Product Mapping**: Request clarification with alternatives: "Did you mean [option1] or [option2]?"
-- **Authentication Failure**: Allow 3 retry attempts, then fall back to HITL approval
+- **PIN Authentication Failure**: Track attempts, provide feedback: "Incorrect PIN. You have [N] attempts remaining."
+- **PIN Locked**: Block transaction, explain lockout: "Too many failed attempts. Please try again in [N] minutes."
+- **Product Not in Knowledge Graph**: Fall back to LLM, add successful mapping to graph
 
 **4. Data Consistency Errors:**
 - **Inventory Sync Conflict**: Use last-write-wins with audit log, notify user of discrepancy
@@ -1632,8 +1834,12 @@ These requirements should be validated through integration testing, load testing
 **5. System Errors:**
 - **Agent Execution Timeout**: Cancel after 30 seconds, notify user, log for debugging
 - **Database Connection Loss**: Use local cache, queue writes, sync when connection restored
-- **TTS Generation Failure**: Fall back to text notification via SMS
+- **TTS Generation Failure**: Fall back to text notification via SMS or WhatsApp
 - **OCR Extraction Failure**: Request manual entry with guided prompts
+- **Product Knowledge Graph Query Failure**: Fall back to LLM-based product identification
+- **Streaming Pipeline Interruption**: Buffer partial results, resume or restart stream
+- **WhatsApp API Failure**: Queue messages for retry, notify user via alternative channel
+- **IVR Call Drop**: Save conversation state, allow resume on callback
 
 ### Error Recovery Strategies
 
@@ -1740,27 +1946,38 @@ test('voice input extraction should extract all present fields', () => {
 
 **Custom Generators Required:**
 - **GSTIN Generator**: Valid 15-character GSTIN format (2 digits state code + 10 digits PAN + 1 digit entity + 1 digit Z + 1 check digit)
+- **PIN Generator**: Valid 4-digit PINs (0000-9999)
 - **Product Name Generator**: Vernacular names in 22 languages with code-mixing
 - **Price Generator**: Realistic price ranges (₹10 to ₹10,000)
 - **Inventory Level Generator**: Quantities from 0 to 10,000 units
 - **Date Generator**: Business dates (excluding holidays)
 - **Voice Input Generator**: Simulated transcriptions with varying confidence levels
 - **Location Generator**: Valid Indian addresses with pincodes
+- **Supplier Reputation Generator**: Historical performance data (delivery rates, return rates, credit terms)
+- **Product Knowledge Graph Generator**: Vernacular-to-SKU mappings across languages
+- **Correction Feedback Generator**: User corrections with various patterns
+- **Multi-Channel Message Generator**: WhatsApp messages, IVR inputs, voice app inputs
 
 ### Unit Test Coverage Requirements
 
 **Critical Paths** (100% coverage required):
 - Purchase order creation and submission
 - Budget validation and HITL triggering
-- Voice biometric authentication
+- PIN-based authentication with retry and lockout
 - ONDC inventory synchronization
-- Price calculation and comparison
+- Price calculation and comparison with supplier reputation scoring
+- Product Knowledge Graph query and fallback to LLM
+- Feedback and correction processing
+- Multi-channel message routing (voice app, WhatsApp, IVR)
 
 **Important Paths** (>90% coverage):
 - Intent parsing and agent delegation
 - Demand forecasting
-- Product taxonomy mapping
+- Product taxonomy mapping with Product Knowledge Graph
 - Error handling and fallback logic
+- Streaming pipeline coordination (ASR → LLM → TTS)
+- Guided onboarding flow
+- Correction and learning mechanisms
 
 **Supporting Paths** (>80% coverage):
 - TTS/ASR integration
@@ -1777,10 +1994,13 @@ test('voice input extraction should extract all present fields', () => {
 - Simulate network latency and timeouts
 
 **End-to-End Scenarios:**
-1. **Complete Onboarding Flow**: Registration → KYC → Catalog Creation → DigiReady Certification
-2. **Purchase Flow**: Price Query → Draft Cart → Approval → PO Submission → Confirmation
+1. **Complete Onboarding Flow**: Registration → KYC → Guided Catalog Creation → DigiReady Certification
+2. **Purchase Flow**: Price Query with Reputation Scoring → Draft Cart → PIN Approval → PO Submission → Confirmation
 3. **Inventory Management**: Stock Update → ONDC Sync → Order Notification → Fulfillment
 4. **Error Recovery**: API Failure → Cache Fallback → Retry → Success
+5. **Multi-Channel Flow**: WhatsApp Query → Voice Response → IVR Follow-up → Context Preservation
+6. **Learning Flow**: Product Query → LLM Fallback → User Correction → Graph Update → Future Query Success
+7. **Streaming Flow**: Voice Input → Streaming ASR → Partial LLM → Streaming TTS → Sub-1s First Byte
 
 ### Performance Testing
 
