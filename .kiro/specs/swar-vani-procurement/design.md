@@ -19,6 +19,28 @@ Key design principles:
 - Trust and governance through budget enforcement and PIN-based authentication
 - Continuous learning through feedback and correction loops
 
+## AWS Services Integration
+
+The system is built on AWS as the primary cloud platform, leveraging managed AI/ML services for scalability and reliability:
+
+| AWS Service | Component | Usage |
+|---|---|---|
+| **Amazon Bedrock** | Master Orchestrator, All Agents | Multi-agent orchestration using Claude/Nova models for intent parsing, task decomposition, price comparison reasoning, and demand forecasting. Bedrock's tool-use capabilities enable agents to call external APIs (B2B platforms, ONDC) autonomously. |
+| **Amazon Bedrock Agents** | Agent Framework | Provides the orchestrator-specialist pattern with built-in memory, guardrails, and multi-step tool use. Each specialist agent (Procurement, Inventory, ONDC, Trust) is a Bedrock Agent with domain-specific action groups. |
+| **Amazon Bedrock Knowledge Bases** | Product Catalog, Pricing History | RAG-based retrieval for product information, historical pricing trends, and procurement playbooks. Connected to S3 data sources with automatic embedding and indexing. |
+| **Amazon Q Business** | Onboarding & Documentation | Conversational assistant for store owner onboarding, ONDC documentation Q&A, and DigiReady certification guidance. |
+| **Amazon DynamoDB** | Store Profiles, Inventory, Orders | Primary datastore for all transactional data with single-digit millisecond latency. Global tables for multi-region availability. |
+| **Amazon Neptune** | Product Knowledge Graph | Graph database mapping vernacular product names across 22 languages to standardized SKUs. Enables multi-hop traversal for fuzzy product matching and synonym resolution. |
+| **Amazon S3** | Document Storage | GST certificates, PAN cards, invoices, audio recordings, and audit logs. Lifecycle policies for cost optimization. |
+| **Amazon ElastiCache** | Pricing Cache, Session Context | Redis-backed caching for B2B platform prices (with TTL), offline fallback data, and conversation session state. |
+| **Amazon API Gateway + Lambda** | External Integrations | Serverless API layer for B2B platform webhooks, ONDC Seller API integration, and GSTN validation. |
+| **Amazon CloudWatch** | Observability | Monitoring agent performance, latency metrics, error tracking, and usage analytics across all components. |
+| **Amazon Cognito** | Authentication | Store owner identity management with phone-number-based auth (OTP) suitable for the target demographic. |
+| **AWS CDK** | Infrastructure | Infrastructure-as-code for reproducible deployments across environments. |
+| **Amazon ECS (Fargate)** | Compute | Serverless container hosting for the streaming voice pipeline and agent runtime. |
+
+The Sarvam AI stack (Saaras ASR, Bulbul TTS, Sarvam Vision OCR, Mayura Translation) provides India-specialized speech and vision capabilities that complement AWS services — these are accessed as external APIs through Amazon API Gateway, with the AI reasoning and orchestration layer running entirely on Amazon Bedrock.
+
 ## Architecture
 
 ### System Components
@@ -2061,3 +2083,4 @@ test('voice input extraction should extract all present fields', () => {
 - Run load and stress tests
 - Conduct user acceptance testing
 - Perform security audit
+
