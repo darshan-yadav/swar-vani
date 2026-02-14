@@ -6,12 +6,18 @@ The Swar-Vani Procurement System is a multi-agent AI platform that enables India
 
 The architecture follows an orchestrator-specialist pattern where a master Orchestrator agent receives voice input, decomposes goals into subtasks, and delegates to four specialist agents: Procurement Agent, Inventory Agent, ONDC Agent, and Trust Agent. Each specialist has domain-specific knowledge and integrates with external services (B2B platforms, ONDC network, speech services).
 
+The system employs a **streaming pipeline architecture** (ASR → LLM → TTS) to achieve perceived latency under 1 second for first audio byte, ensuring natural conversational flow. A local **Product Knowledge Graph** maps vernacular product names to SKUs for faster, more reliable product identification that works offline. The system supports multiple interaction channels including **WhatsApp Business API** and **IVR phone interface** for feature phone users.
+
 Key design principles:
 - Voice-first interaction with multilingual support and code-mixing
+- Streaming architecture for sub-second response latency
+- Local Product Knowledge Graph for fast vernacular-to-SKU mapping
+- Multi-channel support (voice app, WhatsApp, IVR)
 - Agentic autonomy with human-in-the-loop safeguards
 - Real-time synchronization with external platforms
-- Offline capability for critical operations
-- Trust and governance through budget enforcement and authentication
+- Offline capability for critical operations with local graph caching
+- Trust and governance through budget enforcement and PIN-based authentication
+- Continuous learning through feedback and correction loops
 
 ## Architecture
 
@@ -19,16 +25,22 @@ Key design principles:
 
 ```mermaid
 graph TB
+    subgraph "Channel Layer"
+        VOICE[Voice App]
+        WA[WhatsApp Business API]
+        IVR[IVR Phone System]
+    end
+    
     subgraph "Voice Interface Layer"
         WW[Wake-Word Detector]
-        ASR[Saaras v3 ASR]
-        TTS[Bulbul v3 TTS]
+        ASR[Saaras v3 ASR - Streaming]
+        TTS[Bulbul v3 TTS - Streaming]
         OCR[Sarvam Vision OCR]
         TRANS[Mayura Translation]
     end
     
     subgraph "Agent Layer"
-        ORCH[Master Orchestrator]
+        ORCH[Master Orchestrator - Streaming LLM]
         PROC[Procurement Agent]
         INV[Inventory Agent]
         ONDC[ONDC Agent]
@@ -43,20 +55,31 @@ graph TB
     end
     
     subgraph "Data Layer"
+        PKG[Product Knowledge Graph]
         PROFILE[Store Profile DB]
         CATALOG[Product Catalog DB]
         INVENTORY[Inventory DB]
         CONTEXT[Context Memory]
         CACHE[Offline Cache]
+        FEEDBACK[Feedback & Corrections DB]
     end
     
+    VOICE --> WW
+    WA --> ORCH
+    IVR --> ASR
+    
     WW --> ASR
-    ASR --> ORCH
-    ORCH --> TTS
+    ASR -.streaming.-> ORCH
+    ORCH -.streaming.-> TTS
     ORCH --> PROC
     ORCH --> INV
     ORCH --> ONDC
     ORCH --> TRUST
+    
+    ORCH --> PKG
+    PROC --> PKG
+    INV --> PKG
+    ONDC --> PKG
     
     PROC --> B2B
     ONDC --> ONDCAPI
@@ -67,32 +90,40 @@ graph TB
     INV --> INVENTORY
     ONDC --> CATALOG
     ORCH --> CONTEXT
+    ORCH --> FEEDBACK
     
     INV --> CACHE
     PROC --> CACHE
+    PKG --> CACHE
 ```
 
 ### Agent Responsibilities
 
 **Master Orchestrator Agent:**
-- Receives voice input from ASR service
-- Parses intent using LLM-based natural language understanding
+- Receives voice input from ASR service via streaming pipeline
+- Parses intent using streaming LLM-based natural language understanding
+- Queries Product Knowledge Graph for fast vernacular-to-SKU mapping before LLM fallback
 - Decomposes complex goals into subtasks
 - Delegates subtasks to specialist agents
 - Aggregates results from multiple agents
 - Maintains conversation context and state
-- Generates audio responses via TTS service
+- Generates audio responses via streaming TTS service (starts output before LLM completes)
 - Implements fallback strategies for agent failures
+- Manages multi-channel interactions (voice app, WhatsApp, IVR)
+- Processes feedback and corrections to improve Product Knowledge Graph
 
 **Procurement Agent:**
 - Integrates with B2B platforms (Udaan, Jumbotail, local distributors)
 - Performs real-time price discovery across multiple suppliers
 - Calculates total cost including delivery fees
+- Calculates supplier reputation scores based on delivery reliability, return policies, and credit terms
+- Ranks suppliers by composite score (total cost + delivery time + reputation)
 - Identifies bundle discount opportunities
 - Monitors commodity market pricing trends
 - Generates draft purchase orders using EOQ model
 - Executes approved purchase orders via B2B APIs
 - Tracks order status and delivery
+- Uses Product Knowledge Graph for fast product identification
 
 **Inventory Agent:**
 - Tracks real-time stock levels for all SKUs
@@ -108,45 +139,62 @@ graph TB
 
 **ONDC Agent:**
 - Manages ONDC onboarding and DigiReady certification
-- Maps vernacular product names to ONDC retail taxonomy
+- Conducts guided onboarding with system-led questions
+- Maps vernacular product names to ONDC retail taxonomy using Product Knowledge Graph
 - Auto-populates catalog with standard images and descriptions
 - Synchronizes inventory availability via ONDC Seller APIs
 - Updates pricing in real-time on ONDC network
 - Receives order notifications from ONDC Gateway
 - Validates GSTIN via GSTN APIs during registration
 - Processes OCR data from business documents
+- Provides progress indicators during onboarding
 
 **Trust Agent:**
 - Enforces budget limits and spending thresholds
 - Validates purchase orders against business rules
 - Triggers HITL approval for high-value transactions
-- Performs voice biometric authentication
+- Performs PIN-based voice authentication for high-value transactions
+- Validates 4-digit spoken PINs with retry limits (3 attempts, 15-minute lockout)
+- Supports DTMF fallback for PIN entry via IVR
 - Maintains audit log of all transactions
 - Implements rate limiting and fraud detection
 - Manages user permissions and roles
 
 ### Data Flow
 
-**Voice Command Processing:**
+**Streaming Voice Command Processing:**
 1. Store owner speaks wake-word → Wake-Word Detector activates
-2. Audio captured → ASR Service transcribes to text (22 languages)
-3. Text sent to Orchestrator → Intent parsed via LLM
-4. Orchestrator identifies required agents and creates execution plan
-5. Specialist agents execute subtasks in parallel or sequence
-6. Results aggregated → Response generated
-7. TTS Service converts response to audio → Played to store owner
-8. Context updated in memory for conversation continuity
+2. Audio captured → ASR Service begins streaming transcription (partial results)
+3. Partial transcription streamed to Orchestrator → Intent parsing begins before complete transcription
+4. Orchestrator queries Product Knowledge Graph for product identification (<100ms)
+5. If no match in graph, LLM processes intent with streaming output
+6. Orchestrator identifies required agents and creates execution plan
+7. Specialist agents execute subtasks in parallel or sequence
+8. Results aggregated → Response generation begins
+9. TTS Service begins streaming audio output as soon as partial LLM response available
+10. First audio byte delivered to user within 1 second of voice input completion
+11. Context updated in memory for conversation continuity
+12. If correction provided, Feedback DB and Product Knowledge Graph updated
+
+**Multi-Channel Input Processing:**
+- **Voice App**: Wake-word → ASR streaming → Orchestrator
+- **WhatsApp**: Voice message → ASR → Orchestrator OR text message → Orchestrator
+- **IVR**: Phone call → IVR menu → ASR streaming → Orchestrator
+- All channels maintain unified conversation context
 
 **Purchase Order Flow:**
 1. Inventory Agent detects low stock → Generates alert
 2. Procurement Agent queries B2B platforms → Price discovery
-3. Draft cart created with optimal supplier selection
-4. Orchestrator presents draft via TTS → Store owner confirms
-5. Trust Agent validates budget and rules
-6. If high-value: Voice biometric authentication required
-7. PO submitted to B2B platform → Confirmation received
-8. Inventory DB updated with expected delivery
-9. Context memory updated with transaction details
+3. Procurement Agent calculates supplier reputation scores
+4. Draft cart created with optimal supplier selection (cost + delivery + reputation)
+5. Orchestrator presents draft via streaming TTS → Store owner confirms
+6. Trust Agent validates budget and rules
+7. If high-value: PIN confirmation required via voice (or DTMF on IVR)
+8. Store owner speaks 4-digit PIN → Trust Agent validates
+9. If PIN fails, allow 2 more attempts, then 15-minute lockout
+10. PO submitted to B2B platform → Confirmation received
+11. Inventory DB updated with expected delivery
+12. Context memory updated with transaction details
 
 **ONDC Synchronization Flow:**
 1. Store owner reports stock change via voice
@@ -184,7 +232,18 @@ interface WakeWordDetector {
 **ASR Service (Saaras v3):**
 ```typescript
 interface ASRService {
-  // Transcribe audio to text
+  // Stream transcription for real-time processing with partial results
+  streamTranscribe(
+    audioStream: ReadableStream<AudioBuffer>,
+    language: string,
+    options: {
+      enableCodemix: boolean
+      enableTranslit: boolean
+      noiseLevel: number // dB
+    }
+  ): AsyncIterator<PartialTranscription>
+  
+  // Transcribe audio to text (batch mode)
   transcribe(
     audio: AudioBuffer,
     language: string,
@@ -194,12 +253,14 @@ interface ASRService {
       noiseLevel: number // dB
     }
   ): Promise<TranscriptionResult>
-  
-  // Stream transcription for real-time processing
-  streamTranscribe(
-    audioStream: ReadableStream<AudioBuffer>,
-    language: string
-  ): AsyncIterator<PartialTranscription>
+}
+
+interface PartialTranscription {
+  text: string
+  isFinal: boolean
+  confidence: number
+  language: string
+  timestamp: number // milliseconds from start
 }
 
 interface TranscriptionResult {
@@ -214,7 +275,18 @@ interface TranscriptionResult {
 **TTS Service (Bulbul v3):**
 ```typescript
 interface TTSService {
-  // Convert text to speech
+  // Stream audio synthesis for low-latency output
+  streamSynthesize(
+    textStream: AsyncIterator<string>,
+    language: string,
+    options: {
+      pitch: number // 0.5 to 2.0
+      pace: number // 0.75 to 1.5
+      voice: string // voice ID
+    }
+  ): AsyncIterator<AudioChunk>
+  
+  // Convert text to speech (batch mode)
   synthesize(
     text: string,
     language: string,
@@ -230,6 +302,13 @@ interface TTSService {
     transactionDetails: TransactionDetails,
     language: string
   ): Promise<AudioBuffer>
+}
+
+interface AudioChunk {
+  data: AudioBuffer
+  sequenceNumber: number
+  isFinal: boolean
+  timestamp: number // milliseconds from start
 }
 ```
 
@@ -271,20 +350,225 @@ interface TranslationService {
 }
 ```
 
+**Product Knowledge Graph:**
+```typescript
+interface ProductKnowledgeGraph {
+  // Query graph for product mapping
+  queryProduct(
+    vernacularName: string,
+    language: string,
+    storeId?: string // optional for store-specific mappings
+  ): Promise<ProductMapping | null>
+  
+  // Add new mapping from successful LLM resolution
+  addMapping(
+    vernacularName: string,
+    language: string,
+    mapping: ProductMapping,
+    source: 'LLM' | 'USER_CORRECTION' | 'GLOBAL',
+    storeId?: string
+  ): Promise<void>
+  
+  // Update mapping based on user correction
+  updateMapping(
+    vernacularName: string,
+    language: string,
+    correctedMapping: ProductMapping,
+    storeId: string
+  ): Promise<void>
+  
+  // Get correction frequency for a mapping
+  getCorrectionFrequency(
+    vernacularName: string,
+    language: string
+  ): Promise<number>
+  
+  // Promote store-specific mapping to global if corrected 3+ times
+  promoteToGlobal(
+    vernacularName: string,
+    language: string,
+    mapping: ProductMapping
+  ): Promise<void>
+  
+  // Export graph for offline caching
+  exportForOffline(storeId: string): Promise<OfflineGraphData>
+  
+  // Import graph data for offline use
+  importOfflineData(data: OfflineGraphData): Promise<void>
+  
+  // Get graph statistics
+  getStats(): Promise<GraphStats>
+}
+
+interface ProductMapping {
+  brand: string
+  skuId: string
+  ondcCategory: string
+  ondcSubcategory: string
+  standardName: string
+  confidence: number
+  lastUpdated: Date
+}
+
+interface OfflineGraphData {
+  storeId: string
+  mappings: Map<string, ProductMapping> // key: vernacularName_language
+  version: number
+  exportedAt: Date
+}
+
+interface GraphStats {
+  totalMappings: number
+  mappingsByLanguage: Record<string, number>
+  averageConfidence: number
+  recentCorrections: number
+}
+```
+
+**WhatsApp Business API:**
+```typescript
+interface WhatsAppAPI {
+  // Send text message
+  sendTextMessage(
+    phoneNumber: string,
+    message: string
+  ): Promise<MessageStatus>
+  
+  // Send voice message
+  sendVoiceMessage(
+    phoneNumber: string,
+    audio: AudioBuffer
+  ): Promise<MessageStatus>
+  
+  // Receive incoming message (webhook)
+  onMessageReceived(
+    callback: (message: WhatsAppMessage) => Promise<void>
+  ): void
+  
+  // Send interactive buttons
+  sendButtons(
+    phoneNumber: string,
+    message: string,
+    buttons: Button[]
+  ): Promise<MessageStatus>
+  
+  // Maintain conversation context
+  getConversationContext(
+    phoneNumber: string
+  ): Promise<SessionContext>
+}
+
+interface WhatsAppMessage {
+  from: string // phone number
+  type: 'text' | 'voice' | 'button_reply'
+  content: string | AudioBuffer
+  timestamp: Date
+  messageId: string
+}
+
+interface Button {
+  id: string
+  title: string
+}
+
+interface MessageStatus {
+  messageId: string
+  status: 'sent' | 'delivered' | 'read' | 'failed'
+  timestamp: Date
+}
+```
+
+**IVR Phone System:**
+```typescript
+interface IVRSystem {
+  // Handle incoming call
+  onCallReceived(
+    callback: (call: IVRCall) => Promise<void>
+  ): void
+  
+  // Play voice menu
+  playMenu(
+    callId: string,
+    menuOptions: MenuOption[],
+    language: string
+  ): Promise<void>
+  
+  // Capture voice input
+  captureVoiceInput(
+    callId: string,
+    maxDuration: number // seconds
+  ): Promise<AudioBuffer>
+  
+  // Capture DTMF input
+  captureDTMF(
+    callId: string,
+    maxDigits: number,
+    timeout: number // seconds
+  ): Promise<string>
+  
+  // Play audio response
+  playAudio(
+    callId: string,
+    audio: AudioBuffer
+  ): Promise<void>
+  
+  // Stream audio response for low latency
+  streamAudio(
+    callId: string,
+    audioStream: AsyncIterator<AudioChunk>
+  ): Promise<void>
+  
+  // End call
+  endCall(callId: string): Promise<void>
+  
+  // Get call context
+  getCallContext(callId: string): Promise<SessionContext>
+}
+
+interface IVRCall {
+  callId: string
+  from: string // phone number
+  timestamp: Date
+  language: string
+}
+
+interface MenuOption {
+  digit: string // DTMF digit
+  label: string // spoken label
+  action: string
+}
+```
+
 ### Agent Interfaces
 
 **Master Orchestrator:**
 ```typescript
 interface Orchestrator {
-  // Process voice input and coordinate agents
+  // Process streaming voice input and coordinate agents
+  processStreamingVoiceInput(
+    transcriptionStream: AsyncIterator<PartialTranscription>,
+    storeId: string,
+    sessionContext: SessionContext,
+    channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
+  ): AsyncIterator<AudioChunk>
+  
+  // Process voice input and coordinate agents (batch mode)
   processVoiceInput(
     transcription: TranscriptionResult,
     storeId: string,
-    sessionContext: SessionContext
+    sessionContext: SessionContext,
+    channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
   ): Promise<OrchestratorResponse>
   
   // Parse intent from transcribed text
   parseIntent(text: string, context: SessionContext): Promise<Intent>
+  
+  // Query Product Knowledge Graph before LLM fallback
+  queryProductGraph(
+    productName: string,
+    language: string,
+    storeId: string
+  ): Promise<ProductMapping | null>
   
   // Create execution plan for intent
   createExecutionPlan(intent: Intent): ExecutionPlan
@@ -292,15 +576,52 @@ interface Orchestrator {
   // Execute plan by delegating to agents
   executePlan(plan: ExecutionPlan): Promise<ExecutionResult>
   
-  // Generate audio response
+  // Generate streaming audio response
+  generateStreamingResponse(
+    resultStream: AsyncIterator<ExecutionResult>,
+    language: string
+  ): AsyncIterator<AudioChunk>
+  
+  // Generate audio response (batch mode)
   generateResponse(result: ExecutionResult, language: string): Promise<AudioBuffer>
+  
+  // Process user correction/feedback
+  processFeedback(
+    correction: UserCorrection,
+    storeId: string
+  ): Promise<void>
+  
+  // Initiate guided onboarding
+  startGuidedOnboarding(
+    storeId: string,
+    language: string,
+    channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
+  ): AsyncIterator<OnboardingStep>
+}
+
+interface UserCorrection {
+  originalInput: string
+  systemInterpretation: string
+  correctedInterpretation: string
+  correctionType: 'PRODUCT_MAPPING' | 'INTENT' | 'ENTITY'
+  timestamp: Date
+}
+
+interface OnboardingStep {
+  stepNumber: number
+  totalSteps: number
+  question: string
+  expectedResponseType: 'PRODUCT_LIST' | 'QUANTITY' | 'YES_NO' | 'FREE_FORM'
+  examples: string[]
+  audio: AudioBuffer
 }
 
 interface Intent {
-  type: 'PRICE_QUERY' | 'STOCK_UPDATE' | 'ORDER_APPROVAL' | 'CATALOG_UPDATE' | 'REGISTRATION'
+  type: 'PRICE_QUERY' | 'STOCK_UPDATE' | 'ORDER_APPROVAL' | 'CATALOG_UPDATE' | 'REGISTRATION' | 'CORRECTION' | 'ONBOARDING'
   entities: Record<string, any>
   confidence: number
   requiresMultipleAgents: boolean
+  channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
 }
 
 interface ExecutionPlan {
@@ -326,6 +647,18 @@ interface ProcurementAgent {
     storeLocation: Location
   ): Promise<PriceComparison[]>
   
+  // Calculate supplier reputation score
+  calculateSupplierReputation(
+    supplierId: string,
+    storeId: string
+  ): Promise<SupplierReputationScore>
+  
+  // Rank suppliers by composite score
+  rankSuppliers(
+    priceComparisons: PriceComparison[],
+    reputationScores: SupplierReputationScore[]
+  ): Promise<RankedSupplier[]>
+  
   // Generate draft purchase order
   generateDraftPO(
     items: CartItem[],
@@ -345,6 +678,32 @@ interface ProcurementAgent {
   ): Promise<BundleDiscount[]>
 }
 
+interface SupplierReputationScore {
+  supplierId: string
+  overallScore: number // 0-100
+  deliveryReliability: number // percentage of on-time deliveries
+  returnAcceptanceRate: number // percentage of returns accepted
+  creditTermsFlexibility: number // 0-100 score
+  historicalPerformance: {
+    totalOrders: number
+    onTimeDeliveries: number
+    lateDeliveries: number
+    cancelledOrders: number
+    returnsAccepted: number
+    returnsRejected: number
+  }
+  lastUpdated: Date
+}
+
+interface RankedSupplier {
+  supplier: Supplier
+  priceComparison: PriceComparison
+  reputationScore: SupplierReputationScore
+  compositeScore: number // weighted combination
+  rank: number
+  recommendation: string // explanation for ranking
+}
+
 interface PriceComparison {
   supplier: Supplier
   productPrice: number
@@ -359,6 +718,7 @@ interface DraftPurchaseOrder {
   id: string
   items: CartItem[]
   supplier: Supplier
+  supplierReputation: SupplierReputationScore
   subtotal: number
   deliveryCost: number
   discount: number
@@ -453,17 +813,32 @@ interface ONDCAgent {
   // Validate GSTIN
   validateGSTIN(gstin: string): Promise<GSTINValidation>
   
+  // Conduct guided onboarding with system-led questions
+  conductGuidedOnboarding(
+    storeId: string,
+    language: string,
+    channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
+  ): AsyncIterator<OnboardingStep>
+  
+  // Process onboarding response
+  processOnboardingResponse(
+    storeId: string,
+    stepNumber: number,
+    response: string
+  ): Promise<OnboardingProgress>
+  
   // Conduct DigiReady assessment
   conductDigiReadyAssessment(
     storeId: string,
     responses: AssessmentResponse[]
   ): Promise<DigiReadyCertification>
   
-  // Map vernacular product name to ONDC taxonomy
+  // Map vernacular product name to ONDC taxonomy using Product Knowledge Graph
   mapProductToTaxonomy(
     vernacularName: string,
     language: string,
-    category: string
+    category: string,
+    storeId: string
   ): Promise<TaxonomyMapping>
   
   // Sync inventory to ONDC catalog
@@ -484,6 +859,15 @@ interface ONDCAgent {
   ): Promise<void>
 }
 
+interface OnboardingProgress {
+  currentStep: number
+  totalSteps: number
+  completed: boolean
+  nextQuestion: string
+  collectedData: Record<string, any>
+  estimatedTimeRemaining: number // minutes
+}
+
 interface TaxonomyMapping {
   vernacularName: string
   ondcCategory: string
@@ -492,6 +876,7 @@ interface TaxonomyMapping {
   standardImage: string
   standardDescription: string
   confidence: number
+  source: 'PRODUCT_KNOWLEDGE_GRAPH' | 'LLM' | 'USER_INPUT'
   alternativeMappings: TaxonomyMapping[]
 }
 
@@ -518,11 +903,27 @@ interface TrustAgent {
     storeId: string
   ): Promise<boolean>
   
-  // Perform voice biometric authentication
-  authenticateVoice(
-    audioSample: AudioBuffer,
+  // Perform PIN-based voice authentication
+  authenticatePIN(
+    spokenPIN: string,
+    storeId: string,
+    channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
+  ): Promise<PINAuthenticationResult>
+  
+  // Validate DTMF PIN input (IVR fallback)
+  authenticateDTMFPIN(
+    dtmfPIN: string,
     storeId: string
-  ): Promise<AuthenticationResult>
+  ): Promise<PINAuthenticationResult>
+  
+  // Track PIN authentication attempts
+  trackPINAttempt(
+    storeId: string,
+    success: boolean
+  ): Promise<PINAttemptStatus>
+  
+  // Check if PIN authentication is locked
+  isPINLocked(storeId: string): Promise<boolean>
   
   // Log transaction for audit
   logTransaction(
@@ -538,23 +939,31 @@ interface TrustAgent {
   ): Promise<BudgetCheck>
 }
 
+interface PINAuthenticationResult {
+  authenticated: boolean
+  remainingAttempts: number
+  lockedUntil?: Date // if locked after failed attempts
+  userId: string
+}
+
+interface PINAttemptStatus {
+  attemptsRemaining: number
+  locked: boolean
+  lockedUntil?: Date
+  lockDuration: number // minutes
+}
+
 interface ValidationResult {
   valid: boolean
   violations: BusinessRuleViolation[]
   requiresHITL: boolean
-  requiresAuth: boolean
+  requiresPINAuth: boolean
 }
 
 interface BusinessRuleViolation {
   rule: string
   severity: 'ERROR' | 'WARNING'
   message: string
-}
-
-interface AuthenticationResult {
-  authenticated: boolean
-  confidence: number
-  userId: string
 }
 ```
 
@@ -642,13 +1051,18 @@ interface StoreProfile {
   panCard: string
   ownerName: string
   phoneNumber: string
+  whatsappNumber?: string // for WhatsApp channel
   location: Location
   preferredLanguage: string
+  preferredChannel: 'VOICE_APP' | 'WHATSAPP' | 'IVR' | 'ANY'
   storeSize: number // sq ft
   registrationDate: Date
-  onboardingStatus: 'PENDING' | 'COMPLETED'
+  onboardingStatus: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED'
+  onboardingProgress: number // 0-100 percentage
   digiReadyCertified: boolean
-  voiceBiometricEnrolled: boolean
+  pinHash: string // hashed 4-digit PIN
+  pinLocked: boolean
+  pinLockedUntil?: Date
   preferences: StorePreferences
 }
 
@@ -658,6 +1072,7 @@ interface StorePreferences {
   confirmationLevel: 'EXPLICIT' | 'IMPLICIT'
   budgetLimits: BudgetLimits
   approvalThreshold: number // rupees
+  enableGuidedMode: boolean // system-led vs free-form
 }
 
 interface BudgetLimits {
@@ -729,9 +1144,11 @@ interface SessionContext {
   sessionId: string
   storeId: string
   language: string
+  channel: 'VOICE_APP' | 'WHATSAPP' | 'IVR'
   conversationHistory: ConversationTurn[]
   currentIntent: Intent | null
   pendingApprovals: DraftPurchaseOrder[]
+  onboardingState?: OnboardingState
   lastActivity: Date
 }
 
@@ -741,6 +1158,82 @@ interface ConversationTurn {
   systemResponse: string
   intent: Intent
   agentsInvolved: string[]
+  latency: number // milliseconds
+}
+
+interface OnboardingState {
+  currentStep: number
+  totalSteps: number
+  collectedData: Record<string, any>
+  startedAt: Date
+  pausedAt?: Date
+}
+```
+
+### Product Knowledge Graph Data
+```typescript
+interface ProductGraphNode {
+  id: string
+  vernacularName: string
+  language: string
+  brand: string
+  skuId: string
+  ondcCategory: string
+  ondcSubcategory: string
+  standardName: string
+  confidence: number
+  source: 'LLM' | 'USER_CORRECTION' | 'GLOBAL'
+  storeId?: string // null for global mappings
+  createdAt: Date
+  lastUpdated: Date
+  usageCount: number
+  correctionCount: number
+}
+
+interface ProductGraphEdge {
+  fromNodeId: string
+  toNodeId: string
+  relationship: 'SYNONYM' | 'VARIANT' | 'RELATED'
+  weight: number
+}
+
+interface CorrectionHistory {
+  id: string
+  storeId: string
+  vernacularName: string
+  language: string
+  originalMapping: ProductMapping
+  correctedMapping: ProductMapping
+  timestamp: Date
+  promoted: boolean // promoted to global graph
+}
+```
+
+### Feedback and Corrections
+```typescript
+interface UserFeedback {
+  id: string
+  storeId: string
+  sessionId: string
+  feedbackType: 'CORRECTION' | 'CLARIFICATION' | 'COMPLAINT' | 'SUGGESTION'
+  originalInput: string
+  systemInterpretation: string
+  userCorrection: string
+  context: Record<string, any>
+  timestamp: Date
+  processed: boolean
+  appliedToGraph: boolean
+}
+
+interface SystemLearning {
+  id: string
+  learningType: 'PRODUCT_MAPPING' | 'INTENT_PATTERN' | 'ENTITY_EXTRACTION'
+  pattern: string
+  frequency: number
+  confidence: number
+  sources: string[] // store IDs that contributed
+  createdAt: Date
+  lastReinforced: Date
 }
 ```
 
@@ -766,8 +1259,10 @@ interface OfflineCache {
   lastSync: Date
   cachedInventory: InventoryItem[]
   cachedPrices: CachedPrice[]
+  cachedProductGraph: OfflineGraphData
   pendingIntents: Intent[]
   pendingUpdates: CacheUpdate[]
+  pendingFeedback: UserFeedback[]
 }
 
 interface CachedPrice {
@@ -779,7 +1274,7 @@ interface CachedPrice {
 }
 
 interface CacheUpdate {
-  type: 'INVENTORY' | 'CATALOG' | 'PRICE'
+  type: 'INVENTORY' | 'CATALOG' | 'PRICE' | 'FEEDBACK' | 'GRAPH_UPDATE'
   data: any
   timestamp: Date
   synced: boolean
