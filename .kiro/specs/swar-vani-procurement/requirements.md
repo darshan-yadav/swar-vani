@@ -1,3 +1,4 @@
+
 # Requirements Document: Swar-Vani Procurement System
 
 ## Introduction
@@ -331,3 +332,4 @@ The system employs a streaming architecture (ASR → LLM → TTS) to achieve per
 6. WHEN onboarding is complete, THE System SHALL provide a voice tutorial of key commands and features
 7. THE System SHALL allow Store_Owner to pause onboarding and resume later from the same step
 8. THE System SHALL complete guided onboarding in under 15 minutes for a typical store with 50 SKUs
+
