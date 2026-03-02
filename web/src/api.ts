@@ -1,4 +1,6 @@
 const API_URL = (import.meta.env.VITE_API_URL || 'https://eq2chssg7j.execute-api.us-east-1.amazonaws.com/dev').replace(/\/$/, '');
+// Lambda Function URL for voice — bypasses API Gateway 29s timeout limit
+const VOICE_URL = (import.meta.env.VITE_VOICE_URL || 'https://nfkwfhcvmirbkbv7kwj4p26dmy0duizb.lambda-url.us-east-1.on.aws').replace(/\/$/, '');
 
 export interface ConversationStart {
   conversationId: string;
@@ -89,10 +91,11 @@ export interface VoiceResponse {
 
 export async function sendAudio(conversationId: string, audioBlob: Blob): Promise<VoiceResponse> {
   const base64 = await blobToBase64(audioBlob);
-  const res = await fetch(`${API_URL}/conversation/${conversationId}/audio`, {
+  // Use Lambda Function URL to bypass API Gateway 29s timeout
+  const res = await fetch(`${VOICE_URL}/conversation/${conversationId}/audio?storeId=store-001`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ audio: base64, format: 'webm' }),
+    body: JSON.stringify({ audio: base64, format: 'webm', storeId: 'store-001' }),
   });
   if (!res.ok) throw new Error(`Voice API failed: ${res.status}`);
   const data = await res.json();

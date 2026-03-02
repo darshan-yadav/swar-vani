@@ -120,13 +120,23 @@ export class ApiStack extends cdk.Stack {
       entry: path.join(srcDir, 'handlers', 'voice.ts'),
       handler: 'handler',
       runtime: lambda.Runtime.NODEJS_20_X,
-      timeout: cdk.Duration.seconds(60), // Transcribe polling takes time
+      timeout: cdk.Duration.seconds(90), // Transcribe polling takes time
       memorySize: 512,
       environment: {
         ...commonEnv,
         BEDROCK_MODEL_ID: 'amazon.nova-lite-v1:0',
       },
       bundling: bundlingOptions,
+    });
+
+    // Lambda Function URL for voice — bypasses API Gateway 29s timeout
+    const voiceFnUrl = voiceHandler.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE,
+      cors: {
+        allowedOrigins: ['*'],
+        allowedMethods: [lambda.HttpMethod.POST],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Id'],
+      },
     });
 
     const authHandler = new lambdaNode.NodejsFunction(this, 'AuthHandler', {
@@ -268,5 +278,6 @@ export class ApiStack extends cdk.Stack {
 
     // ─── Outputs ───
     new cdk.CfnOutput(this, 'ApiUrl', { value: this.api.url });
+    new cdk.CfnOutput(this, 'VoiceFunctionUrl', { value: voiceFnUrl.url, description: 'Direct voice endpoint (bypasses API GW 29s timeout)' });
   }
 }

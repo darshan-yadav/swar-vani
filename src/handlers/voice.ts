@@ -44,22 +44,58 @@ function respond(statusCode: number, body: unknown): ApiResponse {
   return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(body) };
 }
 
+// ─── Normalize event from API Gateway or Lambda Function URL ───
+
+function normalizeEvent(event: any): {
+  method: string;
+  path: string;
+  pathParams: Record<string, string>;
+  queryParams: Record<string, string>;
+  headers: Record<string, string>;
+  body: string | null;
+} {
+  // Lambda Function URL event
+  if (event.requestContext?.http) {
+    const rawPath = event.rawPath || '';
+    // Extract conversation ID from path: /conversation/{id}/audio
+    const match = rawPath.match(/\/conversation\/([^/]+)\/audio/);
+    return {
+      method: event.requestContext.http.method,
+      path: rawPath,
+      pathParams: match ? { id: match[1] } : {},
+      queryParams: event.queryStringParameters || {},
+      headers: event.headers || {},
+      body: event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString() : (event.body || null),
+    };
+  }
+  // API Gateway event
+  return {
+    method: event.httpMethod,
+    path: event.path,
+    pathParams: event.pathParameters || {},
+    queryParams: event.queryStringParameters || {},
+    headers: event.headers || {},
+    body: event.body || null,
+  };
+}
+
 // ─── Main handler ───
 
-export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  console.log('Voice handler invoked, method:', event.httpMethod, 'path:', event.path);
+export async function handler(event: any): Promise<APIGatewayProxyResult> {
+  const normalized = normalizeEvent(event);
+  console.log('Voice handler invoked, method:', normalized.method, 'path:', normalized.path);
 
-  if (event.httpMethod === 'OPTIONS') {
+  if (normalized.method === 'OPTIONS') {
     return respond(200, {});
   }
 
   try {
-    const conversationId = event.pathParameters?.id;
+    const conversationId = normalized.pathParams?.id;
     if (!conversationId) {
       return respond(400, { error: 'Conversation ID is required in path' });
     }
 
-    const body = JSON.parse(event.body || '{}');
+    const body = JSON.parse(normalized.body || '{}');
     const { audio, format } = body as { audio?: string; format?: string };
 
     if (!audio) {
@@ -68,10 +104,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     const audioFormat = format || 'webm';
     const storeId =
-      event.queryStringParameters?.storeId ||
+      normalized.queryParams?.storeId ||
       body.storeId ||
-      event.headers?.['X-Store-Id'] ||
-      event.headers?.['x-store-id'] ||
+      normalized.headers?.['X-Store-Id'] ||
+      normalized.headers?.['x-store-id'] ||
       'store-001';
 
     // Validate conversation exists
