@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { startConversation, sendMessage, sendAudio, getInventory, getProductName, type InventoryItem } from './api';
 import OndcDashboard from './OndcDashboard';
+import { KhataDashboard } from './KhataDashboard';
 
-type TabId = 'chat' | 'inventory' | 'ondc';
+type TabId = 'chat' | 'inventory' | 'khata' | 'ondc';
 
 interface ChatMessage {
   id: string;
@@ -322,6 +323,12 @@ function App() {
           📦 Inventory
         </button>
         <button
+          className={'tab-item' + (activeTab === 'khata' ? ' active' : '')}
+          onClick={() => setActiveTab('khata')}
+        >
+          📒 Khata
+        </button>
+        <button
           className={'tab-item' + (activeTab === 'ondc' ? ' active' : '')}
           onClick={() => setActiveTab('ondc')}
         >
@@ -465,6 +472,8 @@ function App() {
       )}
 
       {activeTab === 'ondc' && <OndcDashboard />}
+
+      {activeTab === 'khata' && <KhataDashboard />}
     </>
   );
 }

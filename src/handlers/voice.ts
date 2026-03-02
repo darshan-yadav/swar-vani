@@ -159,12 +159,18 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     const jobName = `swar-vani-${timestamp}-${Math.random().toString(36).slice(2, 8)}`;
     const transcriptionOutputKey = `transcriptions/${jobName}.json`;
 
-    // Note: kn-IN (Kannada) and ta-IN (Tamil) are NOT supported for
-    // IdentifyMultipleLanguages in Transcribe. Use only supported languages.
+    // Use user's selected language as primary for better accuracy
+    // Map language code to Transcribe language code
+    const LANG_TO_TRANSCRIBE: Record<string, string> = {
+      'hi': 'hi-IN', 'en': 'en-IN', 'ta': 'ta-IN', 'te': 'te-IN', 'kn': 'kn-IN', 'mr': 'mr-IN',
+    };
+    const primaryLang = LANG_TO_TRANSCRIBE[language || 'hi'] || 'hi-IN';
+
+    // Use single-language mode with the user's selected language for better accuracy
+    // IdentifyMultipleLanguages confuses similar-sounding languages
     await transcribeClient.send(new StartTranscriptionJobCommand({
       TranscriptionJobName: jobName,
-      IdentifyMultipleLanguages: true,
-      LanguageOptions: ['hi-IN', 'en-IN', 'te-IN'],
+      LanguageCode: primaryLang as any,
       MediaFormat: audioFormat as 'webm' | 'mp3' | 'wav' | 'ogg' | 'flac',
       Media: { MediaFileUri: `s3://${BUCKET_NAME}/${inputKey}` },
       OutputBucketName: BUCKET_NAME,

@@ -175,6 +175,17 @@ export class ApiStack extends cdk.Stack {
       bundling: bundlingOptions,
     });
 
+    const khataHandler = new lambdaNode.NodejsFunction(this, 'KhataHandler', {
+      functionName: 'swar-vani-khata',
+      entry: path.join(srcDir, 'handlers', 'khata.ts'),
+      handler: 'handler',
+      runtime: lambda.Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(15),
+      memorySize: 256,
+      environment: commonEnv,
+      bundling: bundlingOptions,
+    });
+
     // ─── Grant DynamoDB Permissions ───
     table.grantReadData(productsHandler);
     table.grantReadWriteData(inventoryHandler);
@@ -189,6 +200,7 @@ export class ApiStack extends cdk.Stack {
 
     // Grant DynamoDB read for analytics
     table.grantReadData(analyticsHandler);
+    table.grantReadWriteData(khataHandler);
     voiceHandler.addToRolePolicy(
       new cdk.aws_iam.PolicyStatement({
         actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
@@ -275,6 +287,14 @@ export class ApiStack extends cdk.Stack {
     ondcSync.addMethod('POST', new apigateway.LambdaIntegration(ondcHandler));
     const ondcStats = ondc.addResource('stats');
     ondcStats.addMethod('GET', new apigateway.LambdaIntegration(ondcHandler));
+
+    // Khata (credit accounts)
+    const khata = this.api.root.addResource('khata');
+    khata.addMethod('GET', new apigateway.LambdaIntegration(khataHandler));
+    khata.addMethod('POST', new apigateway.LambdaIntegration(khataHandler));
+    const khataCustomer = khata.addResource('{name}');
+    const khataTransactions = khataCustomer.addResource('transactions');
+    khataTransactions.addMethod('GET', new apigateway.LambdaIntegration(khataHandler));
 
     // ─── Outputs ───
     new cdk.CfnOutput(this, 'ApiUrl', { value: this.api.url });

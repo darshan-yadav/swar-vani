@@ -1314,3 +1314,286 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══ Khata Dashboard ═══ */
+
+.khata-tab {
+  padding: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.khata-summary-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.khata-stat {
+  flex: 1;
+  background: var(--card-bg, #1e293b);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--border, #334155);
+}
+
+.khata-stat.alert {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.khata-stat-value {
+  display: block;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.khata-stat.alert .khata-stat-value {
+  color: #ef4444;
+}
+
+.khata-stat-label {
+  display: block;
+  font-size: 0.75em;
+  color: var(--text-secondary, #94a3b8);
+  margin-top: 4px;
+}
+
+.khata-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.khata-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.khata-btn.purchase {
+  background: #3b82f6;
+  color: white;
+}
+
+.khata-btn.payment {
+  background: #22c55e;
+  color: white;
+}
+
+.khata-content {
+  display: flex;
+  gap: 16px;
+  min-height: 400px;
+}
+
+.khata-customer-list {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.khata-customer-list h3,
+.khata-detail h3 {
+  margin: 0 0 12px 0;
+  font-size: 1em;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.khata-detail {
+  flex: 1;
+}
+
+.khata-customer-card {
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.khata-customer-card:hover {
+  border-color: #3b82f6;
+}
+
+.khata-customer-card.selected {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.khata-customer-card.high-risk {
+  border-left: 3px solid #ef4444;
+}
+
+.khata-cust-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.khata-cust-name {
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.khata-cust-amount {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #f59e0b;
+  margin: 4px 0;
+}
+
+.khata-cust-meta {
+  font-size: 0.75em;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.khata-txn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.khata-txn-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.khata-txn-icon {
+  font-size: 1.3em;
+}
+
+.khata-txn-info {
+  flex: 1;
+}
+
+.khata-txn-type {
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.khata-txn-items {
+  font-size: 0.8em;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.khata-txn-date {
+  font-size: 0.75em;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.khata-txn-amount {
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+.khata-txn-amount.purchase {
+  color: #ef4444;
+}
+
+.khata-txn-amount.payment {
+  color: #22c55e;
+}
+
+.khata-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.khata-loading, .khata-error {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Modal */
+.khata-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.khata-modal {
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 16px;
+  padding: 24px;
+  width: 340px;
+  max-width: 90vw;
+}
+
+.khata-modal h3 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.khata-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.khata-form input {
+  padding: 10px 12px;
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  background: var(--input-bg, #0f172a);
+  color: var(--text-primary, #f1f5f9);
+  font-size: 0.95em;
+}
+
+.khata-form-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.khata-form-buttons button {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.khata-form-buttons button.primary {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .khata-content {
+    flex-direction: column;
+  }
+  .khata-customer-list {
+    width: 100%;
+  }
+  .khata-summary-bar {
+    flex-wrap: wrap;
+  }
+  .khata-stat {
+    min-width: calc(50% - 8px);
+  }
+}
