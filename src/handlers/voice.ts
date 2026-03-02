@@ -33,15 +33,29 @@ const s3Client = new S3Client({ region: REGION });
 const transcribeClient = new TranscribeClient({ region: REGION });
 const pollyClient = new PollyClient({ region: REGION });
 
-const CORS_HEADERS = {
+const CORS_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Store-Id',
 };
 
+// Only add manual CORS headers when invoked via API Gateway (not Function URL)
+function getHeaders(event: any): Record<string, string> {
+  if (event.requestContext?.http) {
+    // Lambda Function URL — CORS handled automatically by Function URL config
+    return { 'Content-Type': 'application/json' };
+  }
+  // API Gateway — need manual CORS headers
+  return {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Store-Id',
+  };
+}
+
+let _currentEvent: any = null;
+
 function respond(statusCode: number, body: unknown): ApiResponse {
-  return { statusCode, headers: CORS_HEADERS, body: JSON.stringify(body) };
+  return { statusCode, headers: getHeaders(_currentEvent), body: JSON.stringify(body) };
 }
 
 // ─── Normalize event from API Gateway or Lambda Function URL ───
@@ -82,6 +96,7 @@ function normalizeEvent(event: any): {
 // ─── Main handler ───
 
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
+  _currentEvent = event;
   const normalized = normalizeEvent(event);
   console.log('Voice handler invoked, method:', normalized.method, 'path:', normalized.path);
 
@@ -96,7 +111,7 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
 
     const body = JSON.parse(normalized.body || '{}');
-    const { audio, format } = body as { audio?: string; format?: string };
+    const { audio, format, language } = body as { audio?: string; format?: string; language?: string };
 
     if (!audio) {
       return respond(400, { error: '"audio" (base64 encoded) is required' });
@@ -198,16 +213,17 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
 
     // ── Step 3: Process with conversation engine ──
     console.log('Step 3: Running conversation pipeline');
-    const { assistantText, actionRecord } = await runConversationPipeline(transcribedText, storeId);
+    const { assistantText, actionRecord } = await runConversationPipeline(transcribedText, storeId, language || 'hi');
 
     // ── Step 4: Generate voice response with Polly (language-aware) ──
     console.log('Step 4: Generating Polly speech');
 
-    // Detect language from Transcribe result
-    const detectedLanguage = transcriptJson.results?.language_identification?.[0]?.code
-      || transcriptJson.results?.language_code
-      || 'hi-IN';
-    console.log('Detected language:', detectedLanguage);
+    // Map user's selected language code to Polly language code
+    const LANG_TO_POLLY: Record<string, string> = {
+      'hi': 'hi-IN', 'en': 'en-IN', 'ta': 'ta-IN', 'te': 'te-IN', 'kn': 'kn-IN', 'mr': 'hi-IN',
+    };
+    const preferredLang = LANG_TO_POLLY[language || 'hi'] || 'hi-IN';
+    console.log('User selected language:', language, '→ Polly lang:', preferredLang);
 
     // Polly voice mapping — only Hindi and English have neural voices
     const POLLY_VOICES: Record<string, { voiceId: string; engine: 'neural' | 'standard'; langCode: string } | null> = {
@@ -219,7 +235,8 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
       'kn-IN': null, // No neural Kannada voice — return text only
     };
 
-    const pollyVoice = POLLY_VOICES[detectedLanguage] ?? POLLY_VOICES['hi-IN'];
+    // Use user's preferred language, not Transcribe's detection
+    const pollyVoice = POLLY_VOICES[preferredLang] ?? POLLY_VOICES['hi-IN'];
     let audioUrl: string | null = null;
 
     if (pollyVoice) {
@@ -258,7 +275,7 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
 
       console.log('Response audio uploaded:', responseKey);
     } else {
-      console.log('Skipping Polly — no neural voice for', detectedLanguage, '(returning text only)');
+      console.log('Skipping Polly — no neural voice for', preferredLang, '(returning text only)');
     }
 
     // ── Step 5: Persist to DynamoDB ──

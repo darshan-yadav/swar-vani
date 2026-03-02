@@ -89,13 +89,13 @@ export interface VoiceResponse {
   actions: unknown[];
 }
 
-export async function sendAudio(conversationId: string, audioBlob: Blob): Promise<VoiceResponse> {
+export async function sendAudio(conversationId: string, audioBlob: Blob, language: string = 'hi'): Promise<VoiceResponse> {
   const base64 = await blobToBase64(audioBlob);
   // Use Lambda Function URL to bypass API Gateway 29s timeout
   const res = await fetch(`${VOICE_URL}/conversation/${conversationId}/audio?storeId=store-001`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ audio: base64, format: 'webm', storeId: 'store-001' }),
+    body: JSON.stringify({ audio: base64, format: 'webm', storeId: 'store-001', language }),
   });
   if (!res.ok) throw new Error(`Voice API failed: ${res.status}`);
   const data = await res.json();

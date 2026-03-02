@@ -899,6 +899,7 @@ export interface ConversationPipelineResult {
 export async function runConversationPipeline(
   userText: string,
   storeId: string,
+  language?: string,
 ): Promise<ConversationPipelineResult> {
   let assistantText: string;
   let actionRecord: ConversationAction | null = null;
@@ -932,7 +933,16 @@ export async function runConversationPipeline(
     };
 
     // Step 3: Generate Ramu Kaka response
-    const responsePrompt = 'User said: "' + userText + '"\n\nAction performed: ' + actionResult.action + '\nData: ' + actionResult.summary + '\n\nRespond as Ramu Kaka. Detect the language the user spoke in and respond in the SAME language. Be concise, warm, specific with numbers. If this is a summary, be structured. Max 4-5 sentences.';
+    const LANG_NAMES: Record<string, string> = {
+      'hi': 'Hindi (Devanagari script)',
+      'en': 'English',
+      'ta': 'Tamil (தமிழ்)',
+      'te': 'Telugu (తెలుగు)',
+      'kn': 'Kannada (ಕನ್ನಡ)',
+      'mr': 'Marathi (मराठी)',
+    };
+    const langName = LANG_NAMES[language || 'hi'] || 'Hindi (Devanagari script)';
+    const responsePrompt = 'User said: "' + userText + '"\n\nAction performed: ' + actionResult.action + '\nData: ' + actionResult.summary + '\n\nIMPORTANT: You MUST respond in ' + langName + '. This is the user\'s selected language preference. Do NOT use any other language. Be concise, warm, specific with numbers. If this is a summary, be structured. Max 4-5 sentences.';
 
     assistantText = await callBedrock('amazon.nova-lite-v1:0', RESPONSE_SYSTEM_PROMPT, responsePrompt);
     console.log('Ramu Kaka response:', assistantText);

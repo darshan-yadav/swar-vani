@@ -207,7 +207,7 @@ function App() {
         setVoiceState('processing');
 
         try {
-          const data = await sendAudio(cId, audioBlob);
+          const data = await sendAudio(cId, audioBlob, language);
 
           if (data.transcribedText) {
             setMessages(prev => [...prev, { id: 'user-voice-' + Date.now(), role: 'user', text: '🎤 ' + data.transcribedText }]);

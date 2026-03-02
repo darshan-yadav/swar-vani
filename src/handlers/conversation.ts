@@ -146,7 +146,7 @@ async function handleSendMessage(event: APIGatewayProxyEvent): Promise<ApiRespon
   };
 
   // Run the Ramu Kaka conversation pipeline
-  const { assistantText, actionRecord } = await runConversationPipeline(body.text, storeId);
+  const { assistantText, actionRecord } = await runConversationPipeline(body.text, storeId, conversation.language);
 
   const assistantMessage: ConversationMessage = {
     role: 'assistant',
