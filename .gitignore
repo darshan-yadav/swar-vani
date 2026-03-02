@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.npm
+
+# Build outputs
+dist/
+web/dist/
+*.js.map
+
+# CDK output (contains AWS account IDs and asset hashes)
+infra/cdk.out/
+infra/cdk-out*/
+cdk.out/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IAM policies (contains account-specific ARNs)
+iam/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# CDK context (may contain account-specific lookups)
+cdk.context.json
+
+# Logs
+*.log
+npm-debug.log*

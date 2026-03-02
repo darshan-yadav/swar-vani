@@ -1,0 +1,24 @@
+{
+  "name": "swar-vani",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Voice-first AI procurement platform for Indian kirana stores",
+  "workspaces": [
+    "infra",
+    "src"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:infra": "npm run build -w infra",
+    "build:src": "npm run build -w src",
+    "cdk": "npm run cdk -w infra --",
+    "synth": "npm run cdk -- synth",
+    "deploy": "npm run cdk -- deploy --all",
+    "seed": "npx ts-node scripts/seed-data.ts"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
