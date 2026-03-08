@@ -84,8 +84,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         </button>
 
         <div className="login-footer">
-          <p>Demo credentials:</p>
-          <code>Phone: 9876543210 | Password: SwarVani@2026</code>
+          <p>Use the demo mode to explore without an account</p>
         </div>
       </div>
 
