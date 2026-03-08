@@ -1,228 +1,246 @@
-# 🗣️ Swar-Vani — Voice-First AI Procurement for Bharat's 63 Million SMEs
+# 🗣️ Swar-Vani — Voice-First AI Procurement for Bharat
 
 > *"Suno Swar-Vani, Parle-G ke 10 carton ka sabse sasta rate batao"*
 > *(Listen Swar-Vani, tell me the cheapest rate for 10 cartons of Parle-G)*
 
-**Swar-Vani** is an agentic AI platform that enables India's kirana stores and SMEs to manage procurement, inventory, and ONDC marketplace operations entirely through **voice in their native language** — no screens, no typing, no English required.
+**Swar-Vani** is an AI-powered platform that enables India's kirana stores and SMEs to manage procurement, inventory, and marketplace operations through **voice in Hindi** — no screens, no typing, no English required.
 
 [![Track](https://img.shields.io/badge/Track-Professional%2FStartup-purple)]()
 [![Problem Statement](https://img.shields.io/badge/PS-AI%20for%20Retail%2C%20Commerce%20%26%20Market%20Intelligence-blue)]()
 [![AWS](https://img.shields.io/badge/Powered%20by-Amazon%20Bedrock-orange)]()
-[![Languages](https://img.shields.io/badge/Languages-22%20Indian%20Languages-green)]()
 
 ---
 
 ## 🎯 The Problem
 
-India has **63 million micro, small, and medium enterprises** that contribute **30% to the nation's GDP** and employ over 110 million people. Yet:
+India has **63 million micro, small, and medium enterprises** that contribute **30% to the nation's GDP**. Yet:
 
 - **78%** of kirana stores still track inventory manually on paper registers
 - **92%** have never used a digital procurement tool — interfaces are complex and English-heavy
 - **₹2,400 crore** is lost annually to stockouts caused by reactive (not predictive) restocking
 - Most store owners are **comfortable with voice** but struggle with typing and navigation
 
-The digital tools that exist today were designed for urban, English-literate, tech-savvy users. **Bharat's backbone businesses are being left behind.**
-
 ## 💡 The Solution
 
 Swar-Vani reimagines procurement as a **conversation** — not a form to fill.
 
-A store owner simply speaks: *"Aaj ka doodh aur bread ka stock check karo, agar kam hai toh order laga do"* (Check today's milk and bread stock, if low then place an order) — and the system:
+A store owner speaks: *"Aaj ka doodh aur bread ka stock check karo, agar kam hai toh order laga do"* — and Ramu Kaka (the AI assistant):
 
-1. **Understands** the intent in their native language (Hindi, Tamil, Telugu, Kannada, etc.)
-2. **Orchestrates** multiple AI agents to check inventory, compare prices across B2B platforms, and prepare a draft order
-3. **Responds** via voice with the best deal and asks for confirmation
-4. **Executes** the purchase order on approval
+1. **Understands** the intent in Hindi (with code-mixing support)
+2. **Checks** inventory and compares prices across suppliers
+3. **Responds** via voice with the best deal
+4. **Executes** the order on confirmation
 
 All hands-free. All in the language they think in.
 
+## 🎬 Live Demo
+
+The app includes a built-in **interactive demo mode** that showcases real conversations with Ramu Kaka — no account needed.
+
+Just visit the app and click **"🎬 Watch Live Demo"** on the login screen.
+
+## ✨ What's Built
+
+### 🎙️ Voice Interface
+- **Hindi voice input** → Amazon Transcribe → AI conversation → Amazon Polly → Hindi voice response
+- Full speech-to-speech loop with natural Hindi responses
+- Language selection: Hindi, English, Marathi
+- Works on any browser with microphone access
+
+### 🤖 Smart Conversation Engine (Ramu Kaka)
+- Powered by **Amazon Bedrock (Nova Lite)** with a custom conversation engine
+- Intent extraction: `check_inventory`, `compare_prices`, `create_order`, `list_low_stock`, `general_query`
+- Multi-turn context: remembers conversation state across messages
+- Hindi-first: thinks and responds in Hindi, handles code-mixed input naturally
+- **Proactive alerts**: warns about low stock, out-of-stock items, festival-driven demand
+
+### 📦 Inventory Management
+- Real-time stock tracking with low-stock and out-of-stock detection
+- Voice-driven stock updates ("Dettol ke 5 packet aaye hain")
+- Reorder point alerts with days-of-stock estimation
+- Visual dashboard with live inventory grid
+
+### 💰 Smart Procurement
+- Multi-supplier price comparison (Udaan, Jumbotail, LocalMart)
+- Voice-initiated order creation with confirmation flow
+- Order history and status tracking
+- Festival calendar integration for demand forecasting
+
+### 📒 Khata (Credit Ledger)
+- Digital credit tracking for regular customers
+- Voice: "Sharma ji ka ₹500 ka udhar likho" → creates khata entry
+- Transaction history per customer
+- Outstanding balance tracking
+
+### 🏪 ONDC Marketplace
+- Catalog management with sync to ONDC network
+- Order management for incoming marketplace orders
+- Stats dashboard (listed items, stock status, daily orders/revenue)
+- Voice-driven catalog updates
+
+### 📊 Analytics
+- Daily store analytics: voice commands, orders, restock activity
+- Stock health score
+- Top depleted items tracking
+
 ## 🏗️ Architecture
 
-```mermaid
-graph TB
-    subgraph Channel["📱 Channel Layer"]
-        VOICE["Voice App"]
-        WA["WhatsApp Business API"]
-        IVR["IVR Phone System"]
-    end
-
-    subgraph VoiceLayer["🎙️ Voice Interface Layer"]
-        WW["Wake-Word Detector"]
-        ASR["Saaras v3 ASR<br/>(22 langs, code-mix)"]
-        TTS["Bulbul v3 TTS<br/>(streaming)"]
-        OCR["Sarvam Vision OCR"]
-    end
-
-    subgraph AgentLayer["🤖 Agent Layer — Amazon Bedrock"]
-        ORCH["Master Orchestrator<br/>Intent parsing · Task decomposition · Context memory<br/><i>Amazon Bedrock (Claude / Nova)</i>"]
-        PROC["Procurement<br/>Agent"]
-        INV["Inventory<br/>Agent"]
-        ONDC["ONDC<br/>Agent"]
-        TRUST["Trust<br/>Agent"]
-    end
-
-    subgraph Integration["🔗 Integration Layer"]
-        B2B["B2B Platforms<br/>(Udaan, Jumbotail)"]
-        ONDCAPI["ONDC Seller APIs"]
-        GSTN["GSTN"]
-    end
-
-    subgraph Data["💾 Data Layer — AWS"]
-        DDB["Amazon DynamoDB<br/>(profiles, orders)"]
-        S3["Amazon S3<br/>(docs, audio)"]
-        CACHE["Amazon ElastiCache<br/>(pricing cache)"]
-        NEPTUNE["Amazon Neptune<br/>(Knowledge Graph)"]
-    end
-
-    Channel --> VoiceLayer
-    VoiceLayer --> AgentLayer
-    ORCH --> PROC
-    ORCH --> INV
-    ORCH --> ONDC
-    ORCH --> TRUST
-    AgentLayer --> Integration
-    AgentLayer --> Data
 ```
-
-### Multi-Agent Flow Example
-
-```mermaid
-sequenceDiagram
-    participant Owner as 🏪 Store Owner (Hindi)
-    participant ASR as 🎙️ Saaras ASR
-    participant Orch as 🧠 Orchestrator (Bedrock)
-    participant Inv as 📦 Inventory Agent
-    participant Proc as 💰 Procurement Agent
-    participant Trust as 🔒 Trust Agent
-    participant TTS as 🔊 Bulbul TTS
-
-    Owner->>ASR: "Parle-G ka stock check karo<br/>aur sabse sasta rate batao"
-    ASR->>Orch: Parsed intent + entities
-
-    par Parallel Agent Dispatch
-        Orch->>Inv: Check Parle-G stock
-        Inv-->>Orch: Stock: 2 cartons (below reorder point)
-    and
-        Orch->>Proc: Find best price for Parle-G
-        Proc-->>Orch: Udaan: ₹485 · Jumbotail: ₹472 ✓ · Local: ₹490
-    and
-        Orch->>Trust: Validate budget
-        Trust-->>Orch: Within daily budget ✓
-    end
-
-    Orch->>TTS: Compose response
-    TTS->>Owner: "Parle-G ka stock sirf 2 carton hai.<br/>Sabse sasta rate Jumbotail pe ₹472/carton,<br/>delivery kal tak. 10 carton ka order lagaun?<br/>Kul cost ₹4,720."
+┌─────────────────┐
+│   Web App (React)│ ← Voice recording + chat + dashboards
+│   + Cognito Auth │
+└────────┬────────┘
+         │ HTTPS
+┌────────▼────────┐
+│  API Gateway     │ ← REST API (10 endpoints)
+│  + Lambda URLs   │ ← Direct voice endpoint (bypasses 29s GW timeout)
+└────────┬────────┘
+         │
+┌────────▼────────┐     ┌──────────────┐
+│  Lambda Functions│────→│ Amazon Bedrock│ (Nova Lite — conversation AI)
+│  (10 handlers)   │     └──────────────┘
+│                  │────→│ Transcribe    │ (Hindi ASR)
+│                  │────→│ Polly (Kajal) │ (Hindi TTS)
+└────────┬────────┘     └──────────────┘
+         │
+┌────────▼────────┐     ┌──────────────┐
+│  DynamoDB        │     │ S3           │ (audio files)
+│  (single-table)  │     └──────────────┘
+└─────────────────┘
 ```
 
 ## ☁️ AWS Services Used
 
-| AWS Service | Purpose | Why |
-|---|---|---|
-| **Amazon Bedrock** | Multi-agent orchestration, intent parsing, demand forecasting, price comparison reasoning | Core AI brain — Claude/Nova models understand Hindi and 20+ Indian languages natively, with tool-use for agent orchestration |
-| **Amazon Bedrock Agents** | Orchestrator and specialist agent framework | Native multi-agent coordination with memory, tool use, and guardrails |
-| **Amazon Bedrock Knowledge Bases** | Product catalog, playbook retrieval, historical pricing data | RAG for contextual product knowledge and procurement intelligence |
-| **Amazon Q Business** | Store owner onboarding assistant, ONDC documentation Q&A | Guided conversational flows for registration and certification |
-| **Amazon DynamoDB** | Store profiles, inventory, orders, transaction audit logs | Low-latency, serverless, scales to millions of stores |
-| **Amazon Neptune** | Product Knowledge Graph (vernacular names → SKUs) | Graph DB for multi-hop product relationships and vernacular synonym chains |
-| **Amazon S3** | Document storage (GST certificates, invoices, audio logs) | Durable storage for OCR inputs and audit trail |
-| **Amazon ElastiCache** | Pricing cache, offline data, session context | Sub-ms access for cached B2B platform prices during outages |
-| **Amazon API Gateway + Lambda** | B2B platform integration, ONDC webhook handling | Serverless API layer for external integrations |
-| **Amazon CloudWatch** | Monitoring, alerting, usage analytics | Operational visibility across all agents |
-| **Amazon Cognito** | Store owner authentication, session management | Secure, scalable user identity |
-
-## ✨ Key Features
-
-### 🎙️ Vernacular Voice-First Interface
-- **22 Indian languages** with code-mixing support (e.g., "Maggi ka **50 carton** mangwao")
-- Streaming ASR → LLM → TTS pipeline for sub-second perceived latency
-- Works on **WhatsApp, voice app, and IVR (feature phones)**
-- Wake-word activation: "Suno Swar-Vani"
-
-### 🤖 Multi-Agent AI Orchestration
-- **Master Orchestrator** (Bedrock) decomposes complex voice commands into subtasks
-- **4 specialist agents** work in parallel: Procurement, Inventory, ONDC, Trust
-- Maintains conversation context across multi-turn interactions
-- Automatic fallback strategies when agents fail
-
-### 📊 Predictive Inventory & Smart Procurement
-- **EOQ-based restocking** with historical velocity, seasonal trends, and festival calendars
-- **Multi-platform price discovery** across Udaan, Jumbotail, and local distributors in <3 seconds
-- **Bundle discount detection** — automatically identifies savings across suppliers
-- Proactive alerts before stockouts occur
-
-### 🏪 ONDC Marketplace Integration
-- **Voice-driven catalog creation** — describe products verbally, auto-mapped to ONDC taxonomy
-- **Real-time inventory sync** — voice updates reflected on ONDC within 5 seconds
-- **Dynamic pricing** — adjust prices via voice commands with time-bound auto-revert
-- **DigiReady certification** — guided assessment via conversational voice flow
-
-### 🔒 Trust & Governance
-- **Budget enforcement** — configurable daily/weekly/monthly spending limits
-- **Human-in-the-loop** (HITL) approval for high-value transactions
-- **PIN-based authentication** for purchase order execution
-- **Complete audit trail** of all transactions and agent decisions
-
-### 📴 Offline Resilience
-- Local Product Knowledge Graph cached on device
-- Basic inventory queries work without connectivity
-- Intents queued and auto-synced when connection resumes
-
-## 📈 Impact Metrics (Projected)
-
-| Metric | Target | How |
-|---|---|---|
-| **Procurement cost reduction** | 5–9% | Multi-platform price discovery + bundle optimization |
-| **Stockout rate** | <3% | Predictive restocking with festival/weather awareness |
-| **Onboarding time** | <15 min | Voice-guided registration vs. hours of form-filling |
-| **Digital adoption** | 10x increase | Zero-UI barrier — if you can speak, you can use it |
-| **ONDC catalog time** | 80% reduction | Voice description → auto-mapped catalog in minutes |
-
-## 🏪 Target Beneficiaries
-
-1. **Kirana store owners** (12M+ stores) — daily procurement, inventory management
-2. **Small manufacturers** — raw material procurement, supply chain optimization
-3. **Street food vendors & small restaurants** — perishable goods procurement
-4. **Rural agricultural input dealers** — seasonal procurement planning
-5. **Micro-retailers in tier 2–4 cities** — first-time digital tool users
+| AWS Service | Purpose |
+|---|---|
+| **Amazon Bedrock** (Nova Lite) | Conversation AI — intent parsing, Hindi response generation, price reasoning |
+| **Amazon Transcribe** | Hindi speech-to-text (ASR) |
+| **Amazon Polly** (Kajal voice) | Hindi text-to-speech (TTS) |
+| **Amazon DynamoDB** | Store profiles, inventory, orders, khata, conversations (single-table design) |
+| **Amazon S3** | Audio file storage for voice interactions |
+| **Amazon Cognito** | Phone-number-based authentication |
+| **Amazon API Gateway** | REST API with CORS, throttling |
+| **AWS Lambda** (Node.js 20) | 10 serverless functions + Function URL for voice |
+| **Amazon CloudFront + S3** | Static web hosting (SPA) |
+| **AWS CDK** | Infrastructure as Code (5 stacks) |
 
 ## 🗂️ Project Structure
 
 ```
 swar-vani/
-├── .kiro/
-│   └── specs/
-│       └── swar-vani-procurement/
-│           ├── requirements.md      # 20 detailed user stories with acceptance criteria
-│           ├── design.md            # Full architecture, interfaces, data models
-│           └── tasks.md             # Implementation task breakdown
-├── docs/
-│   └── business-feasibility.md      # Market analysis, revenue model, GTM strategy
-├── .gitignore
-├── LICENSE
+├── infra/                          # AWS CDK Infrastructure
+│   ├── bin/app.ts                  # CDK app entry (5 stacks)
+│   └── lib/
+│       ├── data-stack.ts           # DynamoDB + S3
+│       ├── auth-stack.ts           # Cognito User Pool
+│       ├── api-stack.ts            # API Gateway + 10 Lambdas
+│       ├── ai-stack.ts             # Bedrock Agent (Phase 2)
+│       └── web-stack.ts            # CloudFront + S3 hosting
+├── src/
+│   ├── handlers/                   # Lambda function handlers
+│   │   ├── conversation.ts         # Chat endpoint (Bedrock AI)
+│   │   ├── voice.ts                # Voice endpoint (Transcribe → AI → Polly)
+│   │   ├── inventory.ts            # Stock management
+│   │   ├── orders.ts               # Order CRUD
+│   │   ├── products.ts             # Product search
+│   │   ├── prices.ts               # Price comparison
+│   │   ├── khata.ts                # Credit ledger
+│   │   ├── ondc.ts                 # ONDC marketplace
+│   │   ├── analytics.ts            # Store analytics
+│   │   └── auth.ts                 # Auth helpers
+│   └── lib/                        # Shared libraries
+│       ├── conversation-engine.ts  # Core AI conversation logic (~970 LOC)
+│       ├── bedrock.ts              # Bedrock model invocation
+│       ├── dynamo.ts               # DynamoDB helpers
+│       ├── product-master.ts       # 50-product FMCG catalog
+│       ├── festival-calendar.ts    # Indian festival demand forecasting
+│       ├── proactive-alerts.ts     # Stock alerts & recommendations
+│       ├── ondc-mock.ts            # ONDC network simulation
+│       ├── weather.ts              # Weather-based demand tips
+│       └── types.ts                # TypeScript types
+├── web/                            # React SPA (Vite + TypeScript)
+│   └── src/
+│       ├── App.tsx                 # Main app — chat + inventory sidebar
+│       ├── DemoMode.tsx            # Interactive demo walkthrough
+│       ├── LoginPage.tsx           # Cognito phone auth
+│       ├── KhataDashboard.tsx      # Credit ledger UI
+│       ├── OndcDashboard.tsx       # ONDC marketplace UI
+│       ├── api.ts                  # API client
+│       ├── auth.ts                 # Cognito auth
+│       └── index.css               # Dark theme UI (~1600 LOC)
+├── scripts/                        # Data seeding
+│   ├── seed-data.ts                # 50 products, 3 suppliers, stores
+│   ├── seed-demo-data.ts           # Demo conversation data
+│   └── seed-ondc.ts                # ONDC catalog seed
+├── .kiro/specs/                    # Requirements & design docs
+│   └── swar-vani-procurement/
+│       ├── requirements.md         # 20 user stories with acceptance criteria
+│       └── design.md               # Full architecture & data models
 └── README.md
 ```
 
-## 🛠️ Tech Stack
+**~7,300 lines of code** across backend, frontend, infrastructure, and tooling.
 
-| Layer | Technology |
-|---|---|
-| **AI/ML** | Amazon Bedrock (Claude, Nova), Bedrock Agents, Bedrock Knowledge Bases |
-| **Speech** | Saaras v3 ASR (22 languages), Bulbul v3 TTS (streaming) |
-| **Vision** | Sarvam Vision OCR (23 languages) |
-| **Translation** | Mayura contextual translation |
-| **Database** | Amazon DynamoDB, Amazon Neptune (Knowledge Graph) |
-| **Cache** | Amazon ElastiCache (Redis) |
-| **Storage** | Amazon S3 |
-| **API** | Amazon API Gateway + AWS Lambda |
-| **Auth** | Amazon Cognito |
-| **Monitoring** | Amazon CloudWatch |
-| **Deployment** | AWS CDK, Amazon ECS (Fargate) |
+## 🛠️ Setup
+
+### Prerequisites
+- Node.js 20+
+- AWS account with Bedrock access (Nova Lite model)
+- AWS CDK CLI (`npm install -g aws-cdk`)
+
+### Deploy Backend
+
+```bash
+# Install dependencies
+npm install
+cd infra && npm install && cd ..
+
+# Deploy all stacks
+cd infra && cdk deploy --all
+
+# Note the outputs:
+#   ApiUrl, VoiceFunctionUrl, UserPoolId, UserPoolClientId
+```
+
+### Seed Data
+
+```bash
+npx tsx scripts/seed-data.ts
+npx tsx scripts/seed-demo-data.ts
+npx tsx scripts/seed-ondc.ts
+```
+
+### Build & Deploy Web
+
+```bash
+cd web && npm install
+
+# Create .env from template (fill in CDK outputs)
+cp .env.example .env
+
+# Build
+npm run build
+
+# Deploy to S3/CloudFront
+cd ../infra && cdk deploy SwarVaniWebStack
+```
+
+## 🌐 Roadmap
+
+- [ ] Multi-agent orchestration with Bedrock Agents (specialist agents for procurement, inventory, ONDC)
+- [ ] Bedrock Knowledge Base for product catalog RAG
+- [ ] Streaming ASR/TTS for sub-second perceived latency
+- [ ] WhatsApp Business API integration
+- [ ] IVR support for feature phones
+- [ ] More Indian languages (Tamil, Telugu, Kannada, Bengali, etc.)
+- [ ] Offline resilience with local caching
+- [ ] Real B2B platform integration (Udaan, Jumbotail APIs)
 
 ## 👥 Team
 
 | Member | Role |
 |---|---|
-| Ashish Mishra| Full-stack + AWS Architecture |
+| Ashish Mishra | Full-stack + AWS Architecture |
 | Darshan Yadav | Full-stack + AWS Architecture |
 | Parag Khachane | Full-stack + AWS Architecture |
 

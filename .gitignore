@@ -14,8 +14,12 @@ cdk.out/
 
 # Environment files
 .env
-.env.*
-*.env
+.env.local
+.env.*.local
+web/.env
+web/.env.local
+!.env.example
+!web/.env.example
 
 # IDE
 .vscode/

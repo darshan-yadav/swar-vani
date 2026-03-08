@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'https://eq2chssg7j.execute-api.us-east-1.amazonaws.com/dev').replace(/\/$/, '');
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 interface KhataCustomer {
   customerName: string;

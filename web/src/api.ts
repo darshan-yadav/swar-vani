@@ -1,6 +1,6 @@
-const API_URL = (import.meta.env.VITE_API_URL || 'https://eq2chssg7j.execute-api.us-east-1.amazonaws.com/dev').replace(/\/$/, '');
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 // Lambda Function URL for voice — bypasses API Gateway 29s timeout limit
-const VOICE_URL = (import.meta.env.VITE_VOICE_URL || 'https://nfkwfhcvmirbkbv7kwj4p26dmy0duizb.lambda-url.us-east-1.on.aws').replace(/\/$/, '');
+const VOICE_URL = (import.meta.env.VITE_VOICE_URL || '').replace(/\/$/, '');
 
 export interface ConversationStart {
   conversationId: string;

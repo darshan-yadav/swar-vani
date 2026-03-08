@@ -1,7 +1,7 @@
 import { CognitoUserPool, CognitoUser, AuthenticationDetails } from 'amazon-cognito-identity-js';
 
-const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || 'us-east-1_TJDU9FaBA';
-const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '7cm4rrkg2i8tv3hl6do4s4698e';
+const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || '';
+const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
 
 const userPool = new CognitoUserPool({
   UserPoolId: USER_POOL_ID,
